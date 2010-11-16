@@ -146,9 +146,14 @@ void qr_draw_point_radius(qr_uint x, qr_uint y, qr_size radius, qr_color color)
 	}
 }
 
+void qr_draw_coords(qr_int x, qr_int y, qr_color color)
+{
+	qr_draw_point_radius(x, y, QR_IMAGE_LOG_RADIUS, color);
+}
+
 void qr_draw_point(qr_point p, qr_color color)
 {
-	qr_draw_point_radius(p.x, p.y, QR_IMAGE_LOG_RADIUS, color);
+	qr_draw_coords(p.x, p.y, color);
 }
 
 void qr_draw_line (qr_line line, qr_color color)

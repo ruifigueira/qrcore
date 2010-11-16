@@ -19,7 +19,7 @@ typedef struct
 {
 	qr_point center;
 	qr_size estimate_width;
-	qr_point border_points[4];
+	qr_point border_points[8];
 } qr_pattern_result;
 
 void qr_pattern_detector_init();
