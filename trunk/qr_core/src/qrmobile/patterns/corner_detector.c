@@ -17,6 +17,8 @@
 #define QR_NUM_SAMPLES		(1 << NUM_SAMPLES_LN)
 #define QR_START_SAMPLE		(NUM_SAMPLES >> 2)
 
+#define QR_MAX_WHITE_CHECKS 20
+
 /*
  * we need this trick to be able to generate different variables in macros (based on line number):
  * http://stackoverflow.com/questions/1597007/creating-c-macro-with-and-line-token-concatenation-with-positioning-macro
@@ -29,6 +31,29 @@
 #define qr_outside_limits(px, py, limits)	((px) < (limits)[0].x || (px) > (limits)[1].x || (py) < (limits)[0].y || (py) > (limits)[1].y)
 #define qr_point_outside_limits(p, limits)  qr_outside_limits((p).x, (p).y, limits)
 
+const int QR_INDEXES[] = {
+/* +-----------+-------+----------+------+ */
+/* | mod_slope | steep | is_right | yinc | */
+/* +-----------+-------+----------+------+ */
+/* |     0     |   0   |    0     |  0   | */    4,
+/* |     0     |   0   |    0     |  1   | */    4,
+/* |     0     |   0   |    1     |  0   | */    0,
+/* |     0     |   0   |    1     |  1   | */    0,
+/* |     0     |   1   |    0     |  0   | */    2,
+/* |     0     |   1   |    0     |  1   | */    6,
+/* |     0     |   1   |    1     |  0   | */    6,
+/* |     0     |   1   |    1     |  1   | */    2,
+/* |     1     |   0   |    0     |  0   | */    3,
+/* |     1     |   0   |    0     |  1   | */    5,
+/* |     1     |   0   |    1     |  0   | */    7,
+/* |     1     |   0   |    1     |  1   | */    1,
+/* |     1     |   1   |    0     |  0   | */    3,
+/* |     1     |   1   |    0     |  1   | */    5,
+/* |     1     |   1   |    1     |  0   | */    7,
+/* |     1     |   1   |    1     |  1   | */    1
+/* +-----------+-------+----------+------+ */
+};
+
 /*
  * Bresenham's line algorithm implementation extracted from:
  * http://en.wikipedia.org/wiki/Bresenham's_line_algorithm
@@ -38,20 +63,25 @@
 qr_bool qr_check_white_line(qr_line line, qr_bit_matrix *image)
 {
 
-/*
- * This macro defines plot as a check if pixel is black. In that case, returns false.
- */
-#define qr_plot(x, y)	if(qr_image_get(image, (x), (y))) return QR_FALSE
+/* This macro defines plot as a check if pixel is black. In that case, returns false */
+//#define qr_plot(x, y)     qr_image_log_coords((x), (y), QR_COLOR_BLUE); if(qr_image_get(image, (x), (y))) return QR_FALSE
+#define qr_plot(x, y)	                                   \
+	if(xstep_error < 0)                                    \
+	{                                                      \
+		qr_image_log_coords((x), (y), QR_COLOR_BLUE);      \
+		if(qr_image_get(image, (x), (y))) return QR_FALSE; \
+		xstep_error += delta_x;                            \
+	}                                                      \
+	else                                                   \
+	{                                                      \
+		xstep_error -= QR_MAX_WHITE_CHECKS;                \
+	}
 
 	qr_int x0 = line.p0.x;
 	qr_int y0 = line.p0.y;
 
 	qr_int x1 = line.p1.x;
 	qr_int y1 = line.p1.y;
-
-	/* we don't need to check the starting point */
-	/* qr_plot(x0, y0); */
-	qr_plot(x1, y1);
 
 	qr_bool steep = qr_abs(y1 - y0) > qr_abs(x1 - x0);
 
@@ -67,19 +97,17 @@ qr_bool qr_check_white_line(qr_line line, qr_bit_matrix *image)
 		qr_swap(y0, y1);
 	}
 
-	qr_int delta_x = x1 - x0;
-	qr_uint xstep = qr_max(1, delta_x >> 5);
-
-	delta_x = delta_x / xstep;
-
-	qr_int delta_y = qr_abs(y1 - y0);
+	qr_uint delta_x = x1 - x0;
+	qr_uint delta_y = qr_abs(y1 - y0);
 	qr_int error = delta_x >> 1;
 
 	qr_int y = y0;
 	qr_int ystep = y0 < y1 ? 1 : -1;
 
+	qr_int xstep_error  = QR_MAX_WHITE_CHECKS >> 1;
+
 	qr_int x;
-	for (x = x0; x < x1; x += xstep)
+	for (x = x0; x <= x1; ++x)
 	{
 		if (steep)
 		{
@@ -218,7 +246,7 @@ qr_bool qr_check_adjacent_patterns(qr_pattern_result *pr0, qr_pattern_result *pr
 
 	if(qr_point_outside_limits(border_point0, limits) || qr_point_outside_limits(border_point1, limits)) return QR_FALSE;
 
-	qr_line line = { border_point0, border_point1 }; qr_image_log_line(line, QR_COLOR_BLUE);
+	qr_line line = { border_point0, border_point1 }; /* qr_image_log_line(line, QR_COLOR_BLUE); */
 
 	return qr_check_white_line(line, image);
 }
@@ -229,6 +257,8 @@ qr_int qr_find_adjacent_patterns(
 		qr_pattern_result *other,
 		qr_bit_matrix *image)
 {
+
+
 	if(pr0->center.x > pr1->center.x) {
 		/* swap */
 		qr_pattern_result *tmp = pr0;
@@ -238,21 +268,23 @@ qr_int qr_find_adjacent_patterns(
 
 	qr_line line = { pr0->center, pr1->center };
 
-	qr_bool steep    = qr_line_steep(line);
-	qr_bool is_right = qr_point_side(line, other->center) > 0;
-	qr_bool yinc     = pr0->center.y < pr1->center.y;
+	qr_size diff_y = qr_abs(line.p1.y - line.p0.y);
+	qr_size diff_x = qr_abs(line.p1.x - line.p0.x);
 
-	qr_uint border_index;
+	qr_float slope   = diff_y * 1.0f / diff_x;
 
-	if(steep)
-	{
-		/* exclusive or */
-		border_index = is_right ^ yinc ? 3 : 1;
-	}
-	else
-	{
-		border_index = is_right ? 0 : 2;
-	}
+	qr_bool mod_slope = slope > 0.4142 && slope < 2.4142;
+	qr_bool steep     = diff_y > diff_x;
+	qr_bool is_right  = qr_point_side(line, other->center) > 0;
+	qr_bool yinc      = pr0->center.y < pr1->center.y;
+
+	qr_uint indexes_index = 0;
+	if(mod_slope) indexes_index += 8;
+	if(steep    ) indexes_index += 4;
+	if(is_right ) indexes_index += 2;
+	if(yinc     ) indexes_index += 1;
+
+	qr_uint border_index = QR_INDEXES[indexes_index];
 
 	qr_bool clockwise = !is_right;
 
@@ -311,12 +343,16 @@ qr_bool qr_find_no_pattern_border(qr_point *point, qr_point p0, qr_point p1, qr_
 	return QR_FALSE;
 }
 
-#define 	qr_image_log_pattern(pr)	                  \
-qr_image_log_point(pr->center, QR_COLOR_RED);             \
-qr_image_log_point(pr->border_points[0], QR_COLOR_GREEN); \
-qr_image_log_point(pr->border_points[1], QR_COLOR_GREEN); \
-qr_image_log_point(pr->border_points[2], QR_COLOR_GREEN); \
-qr_image_log_point(pr->border_points[3], QR_COLOR_GREEN);
+#define 	qr_image_log_pattern(pr)	                      \
+	qr_image_log_point(pr->center, QR_COLOR_RED);             \
+	qr_image_log_point(pr->border_points[0], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[1], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[2], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[3], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[4], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[5], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[6], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[7], QR_COLOR_GREEN);
 
 qr_bool qr_detect_corners(qr_float_point *corner_points, qr_pattern_result *pattern_results, qr_bit_matrix *image)
 {
@@ -335,7 +371,8 @@ qr_bool qr_detect_corners(qr_float_point *corner_points, qr_pattern_result *patt
  * variables accordingly
  */
 #define qr_find_adjacent_patterns_helper(i, pr0, pr1, pr2)                      \
-	border_index = qr_find_adjacent_patterns(pr0, pr1, pr2, image);             \
+	border_index = (i == 2 && found == 2) ? -1 :                                \
+			qr_find_adjacent_patterns(pr0, pr1, pr2, image);                    \
 	if(border_index < 0)                                                        \
 	{                                                                           \
 		opposite_pattern0 = pr0; opposite_pattern1 = pr1; middle_pattern = pr2; \
@@ -377,13 +414,13 @@ qr_bool qr_detect_corners(qr_float_point *corner_points, qr_pattern_result *patt
 	qr_point opposite_border_point0 = opposite_pattern0->border_points[border_index0];
 	qr_point opposite_border_point1 = opposite_pattern1->border_points[border_index1];
 
-	qr_uint other_border_index0 = (border_index0 + 3) % 4;
-	qr_uint other_border_index1 = (border_index1 + 1) % 4;
+	qr_uint other_border_index0 = (border_index0 + 6) % 8;
+	qr_uint other_border_index1 = (border_index1 + 2) % 8;
 
 	qr_point other_opposite_border_point0 = opposite_pattern0->border_points[other_border_index0];
 	qr_point other_opposite_border_point1 = opposite_pattern1->border_points[other_border_index1];
 
-	qr_size dist = qr_max(opposite_pattern0->estimate_width, opposite_pattern1->estimate_width) >> 2;
+	qr_size dist = qr_max(opposite_pattern0->estimate_width, opposite_pattern1->estimate_width) >> 3;
 
 	qr_point border_point0, border_point1;
 

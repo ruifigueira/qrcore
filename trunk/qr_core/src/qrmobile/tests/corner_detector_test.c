@@ -17,8 +17,8 @@
 #include <string.h>
 #include <png.h>
 
-#define IN_FILE	    "/opt/workspace-helios/qr_core/test/data/mine/rotate45.png"
-#define OUT_FILE	"/opt/workspace-helios/qr_core/test/data/mine/rotate45_out.png"
+#define IN_FILE	    "/opt/workspace-helios/qr_core/test/data/qrcode-3/40.png"
+#define OUT_FILE	"/opt/workspace-helios/qr_core/test/data/qrcode-3/40_out.png"
 
 /*
 #define IN_FILE	    "/opt/workspace-helios/qr_core/test/data/qrcode-3/07.png"

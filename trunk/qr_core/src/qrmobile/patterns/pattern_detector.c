@@ -269,7 +269,8 @@ qr_size qr_check_pattern_size(qr_size_p color_sizes_cursor, qr_size max_pattern_
 	return 0;
 }
 
-qr_int qr_pattern_result_border_position(
+qr_bool qr_pattern_result_border_position(
+		qr_point *result,
 		qr_bit_matrix *image,
 		qr_int curr_x,
 		qr_int curr_y,
@@ -289,7 +290,7 @@ qr_int qr_pattern_result_border_position(
 		curr_x += inc_x;
 		curr_y += inc_y;
 
-		if(curr_x < 0 || curr_x >= width || curr_y < 0 || curr_y >= height) return -1;
+		if(curr_x < 0 || curr_x >= width || curr_y < 0 || curr_y >= height) return QR_FALSE;
 
 		if(last_set != qr_image_get(image, curr_x, curr_y))
 		{
@@ -298,28 +299,40 @@ qr_int qr_pattern_result_border_position(
 		}
 	}
 
-	return inc_x == 0 ? curr_y : curr_x;
+	result->x = curr_x;
+	result->y = curr_y;
+
+	return QR_TRUE;
 }
 
 qr_bool qr_pattern_result_fill_border_points(qr_pattern_result *result, qr_int center_x, qr_int center_y, qr_size pattern_size, qr_bit_matrix *image)
 {
 	qr_assert(qr_image_get(image, center_x, center_y));
 
-	qr_int x_min = qr_pattern_result_border_position(image, center_x, center_y, -1,  0); if(x_min == -1) return QR_FALSE;
-	qr_int x_max = qr_pattern_result_border_position(image, center_x, center_y,  1,  0); if(x_max == -1) return QR_FALSE;
-	qr_int y_min = qr_pattern_result_border_position(image, center_x, center_y,  0, -1); if(y_min == -1) return QR_FALSE;
-	qr_int y_max = qr_pattern_result_border_position(image, center_x, center_y,  0,  1); if(y_max == -1) return QR_FALSE;
+	qr_point *point = result->border_points;
+
+	qr_bool found;
+
+	/* clockwise from top center */
+	found = qr_pattern_result_border_position(point    , image, center_x, center_y,  0, -1); if(!found) return QR_FALSE;
+	found = qr_pattern_result_border_position(point + 4, image, center_x, center_y,  0,  1); if(!found) return QR_FALSE;
+
+	/* we now recalculate center_y, to let the center point more centered :) */
+	qr_int new_center_y = (point[0].y + point[4].y) >> 1;
+	if(qr_image_get(image, center_x, new_center_y))
+		center_y = new_center_y;
+
+	found = qr_pattern_result_border_position(point + 1, image, center_x, center_y,  1, -1); if(!found) return QR_FALSE;
+	found = qr_pattern_result_border_position(point + 2, image, center_x, center_y,  1,  0); if(!found) return QR_FALSE;
+	found = qr_pattern_result_border_position(point + 3, image, center_x, center_y,  1,  1); if(!found) return QR_FALSE;
+
+	found = qr_pattern_result_border_position(point + 5, image, center_x, center_y, -1,  1); if(!found) return QR_FALSE;
+	found = qr_pattern_result_border_position(point + 6, image, center_x, center_y, -1,  0); if(!found) return QR_FALSE;
+	found = qr_pattern_result_border_position(point + 7, image, center_x, center_y, -1, -1); if(!found) return QR_FALSE;
 
 	result->center.x = center_x;
 	result->center.y = center_y;
 	result->estimate_width = pattern_size;
-
-	qr_point *point = result->border_points;
-
-	point->x = center_x; point->y = y_min;    point++;
-	point->x = x_max;    point->y = center_y; point++;
-	point->x = center_x; point->y = y_max;    point++;
-	point->x = x_min;    point->y = center_y; point++;
 
 	return QR_TRUE;
 }
