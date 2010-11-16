@@ -27,9 +27,19 @@
 #define   QR_VAR_NAME(pref, suf)	__QR_VAR_NAME(pref, suf)
 #define   QR_VAR_LN(pref)	          QR_VAR_NAME(pref, __LINE__)
 
-
 #define qr_outside_limits(px, py, limits)	((px) < (limits)[0].x || (px) > (limits)[1].x || (py) < (limits)[0].y || (py) > (limits)[1].y)
 #define qr_point_outside_limits(p, limits)  qr_outside_limits((p).x, (p).y, limits)
+
+#define 	qr_image_log_pattern(pr)	                      \
+	qr_image_log_point(pr->center, QR_COLOR_RED);             \
+	qr_image_log_point(pr->border_points[0], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[1], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[2], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[3], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[4], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[5], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[6], QR_COLOR_GREEN); \
+	qr_image_log_point(pr->border_points[7], QR_COLOR_GREEN)
 
 const int QR_INDEXES[] = {
 /* +-----------+-------+----------+------+ */
@@ -64,7 +74,6 @@ qr_bool qr_check_white_line(qr_line line, qr_bit_matrix *image)
 {
 
 /* This macro defines plot as a check if pixel is black. In that case, returns false */
-//#define qr_plot(x, y)     qr_image_log_coords((x), (y), QR_COLOR_BLUE); if(qr_image_get(image, (x), (y))) return QR_FALSE
 #define qr_plot(x, y)	                                   \
 	if(xstep_error < 0)                                    \
 	{                                                      \
@@ -226,7 +235,12 @@ qr_bool qr_raster_circle(
 #undef qr_plot
 }
 
-qr_bool qr_check_adjacent_patterns(qr_pattern_result *pr0, qr_pattern_result *pr1, qr_uint border_index, qr_bool clockwise, qr_bit_matrix *image)
+qr_bool qr_check_adjacent_patterns(
+		qr_pattern_result *pr0,
+		qr_pattern_result *pr1,
+		qr_uint border_index,
+		qr_bool clockwise,
+		qr_bit_matrix *image)
 {
 	qr_point border_point0 = pr0->border_points[border_index];
 	qr_point border_point1 = pr1->border_points[border_index];
@@ -342,17 +356,6 @@ qr_bool qr_find_no_pattern_border(qr_point *point, qr_point p0, qr_point p1, qr_
 
 	return QR_FALSE;
 }
-
-#define 	qr_image_log_pattern(pr)	                      \
-	qr_image_log_point(pr->center, QR_COLOR_RED);             \
-	qr_image_log_point(pr->border_points[0], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[1], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[2], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[3], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[4], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[5], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[6], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[7], QR_COLOR_GREEN);
 
 qr_bool qr_detect_corners(qr_float_point *corner_points, qr_pattern_result *pattern_results, qr_bit_matrix *image)
 {
