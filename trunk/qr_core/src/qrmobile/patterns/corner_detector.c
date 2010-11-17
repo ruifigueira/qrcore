@@ -30,16 +30,16 @@
 #define qr_outside_limits(px, py, limits)	((px) < (limits)[0].x || (px) > (limits)[1].x || (py) < (limits)[0].y || (py) > (limits)[1].y)
 #define qr_point_outside_limits(p, limits)  qr_outside_limits((p).x, (p).y, limits)
 
-#define 	qr_image_log_pattern(pr)	                      \
-	qr_image_log_point(pr->center, QR_COLOR_RED);             \
-	qr_image_log_point(pr->border_points[0], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[1], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[2], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[3], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[4], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[5], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[6], QR_COLOR_GREEN); \
-	qr_image_log_point(pr->border_points[7], QR_COLOR_GREEN)
+#define 	qr_image_log_pattern(pr)	                     \
+	qr_image_log_point(pr->center, QR_COLOR_GREEN);          \
+	qr_image_log_point(pr->border_points[0], QR_COLOR_PURPLE); \
+	qr_image_log_point(pr->border_points[1], QR_COLOR_PURPLE); \
+	qr_image_log_point(pr->border_points[2], QR_COLOR_PURPLE); \
+	qr_image_log_point(pr->border_points[3], QR_COLOR_PURPLE); \
+	qr_image_log_point(pr->border_points[4], QR_COLOR_PURPLE); \
+	qr_image_log_point(pr->border_points[5], QR_COLOR_PURPLE); \
+	qr_image_log_point(pr->border_points[6], QR_COLOR_PURPLE); \
+	qr_image_log_point(pr->border_points[7], QR_COLOR_PURPLE)
 
 const int QR_INDEXES[] = {
 /* +-----------+-------+----------+------+ */
@@ -149,8 +149,6 @@ qr_closest_white;
 
 void qr_update_closest_white(qr_closest_white *closest_white, qr_point p0, qr_point p1)
 {
-	qr_image_log_point(p1, QR_COLOR_PURPLE);
-
 	qr_int min_square_norm = closest_white->square_norm;
 
 	qr_point diff = qr_point_sub(p1, p0);
@@ -430,6 +428,9 @@ qr_bool qr_detect_corners(qr_float_point *corner_points, qr_pattern_result *patt
 	if(!qr_find_no_pattern_border(&border_point0, other_opposite_border_point0, other_opposite_border_point1, dist, QR_TRUE,  image)) return QR_FALSE;
 	if(!qr_find_no_pattern_border(&border_point1, other_opposite_border_point1, other_opposite_border_point0, dist, QR_FALSE, image)) return QR_FALSE;
 
+	qr_image_log_point(border_point0, QR_COLOR_ORANGE);
+	qr_image_log_point(border_point1, QR_COLOR_ORANGE);
+
 	/* opposite pattern 0 -> middle pattern */
 	qr_line line_0_middle     = { opposite_border_point0, middle_pattern->border_points[border_index0] };
 	/* opposite pattern 1 -> middle pattern */
@@ -446,10 +447,10 @@ qr_bool qr_detect_corners(qr_float_point *corner_points, qr_pattern_result *patt
 	qr_line_intersect(&opposite_corner1,  line_1_middle,     line_1_no_pattern);
 	qr_line_intersect(&no_pattern_corner, line_0_no_pattern, line_1_no_pattern);
 
-	corner_points[0] = middle_corner;     qr_image_log_point(qr_float_point_to_int_point(corner_points[0]), QR_COLOR_YELLOW);
-	corner_points[2] = opposite_corner1;  qr_image_log_point(qr_float_point_to_int_point(corner_points[2]), QR_COLOR_YELLOW);
-	corner_points[1] = opposite_corner0;  qr_image_log_point(qr_float_point_to_int_point(corner_points[1]), QR_COLOR_YELLOW);
-	corner_points[3] = no_pattern_corner; qr_image_log_point(qr_float_point_to_int_point(corner_points[3]), QR_COLOR_YELLOW);
+	corner_points[0] = middle_corner;     qr_image_log_point(qr_float_point_to_int_point(corner_points[0]), QR_COLOR_RED);
+	corner_points[2] = opposite_corner1;  qr_image_log_point(qr_float_point_to_int_point(corner_points[2]), QR_COLOR_RED);
+	corner_points[1] = opposite_corner0;  qr_image_log_point(qr_float_point_to_int_point(corner_points[1]), QR_COLOR_RED);
+	corner_points[3] = no_pattern_corner; qr_image_log_point(qr_float_point_to_int_point(corner_points[3]), QR_COLOR_RED);
 
 	return QR_TRUE;
 }
