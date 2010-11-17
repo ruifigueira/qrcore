@@ -17,13 +17,8 @@
 #include <string.h>
 #include <png.h>
 
-#define IN_FILE	    "/opt/workspace-helios/qr_core/test/data/qrcode-3/40.png"
-#define OUT_FILE	"/opt/workspace-helios/qr_core/test/data/qrcode-3/40_out.png"
-
-/*
-#define IN_FILE	    "/opt/workspace-helios/qr_core/test/data/qrcode-3/07.png"
-#define OUT_FILE	"/opt/workspace-helios/qr_core/test/data/qrcode-3/07_out.png"
-*/
+#define IN_FILE	    "/opt/workspace-helios/qr_core/test/data/qrcode-3/01.png"
+#define OUT_FILE	"/opt/workspace-helios/qr_core/test/data/qrcode-3/01_out.png"
 
 
 #define QR_ERR_MSG_NOT_PNG 			"[read_png_file] File %s is not recognized as a PNG file"
