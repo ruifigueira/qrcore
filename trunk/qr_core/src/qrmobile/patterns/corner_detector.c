@@ -321,8 +321,8 @@ qr_bool qr_find_no_pattern_border(qr_point *point, qr_point p0, qr_point p1, qr_
 	perpendicular_vect = clockwise ? qr_point_rotate_90cw(vect) : qr_point_rotate_90ccw(vect);
 	perpendicular_vect = qr_point_multiply(perpendicular_vect, m);
 
-	p0 = qr_point_add(p0, perpendicular_vect); qr_image_log_point(p0, QR_COLOR_RED);
-	p1 = qr_point_add(p1, perpendicular_vect); qr_image_log_point(p1, QR_COLOR_RED);
+	p0 = qr_point_add(p0, perpendicular_vect); qr_image_log_point(p0, QR_COLOR_YELLOW);
+	p1 = qr_point_add(p1, perpendicular_vect); qr_image_log_point(p1, QR_COLOR_YELLOW);
 
 	/* vector (line.p0 -> line.p1) * .6 */
 	qr_point v               = qr_point_multiply(qr_point_sub(p1, p0), 0.6f);
